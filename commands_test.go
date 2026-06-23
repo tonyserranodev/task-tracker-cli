@@ -26,6 +26,9 @@ func TestGetCommands(t *testing.T) {
 		if cmd.name != name {
 			t.Errorf("command %q has name %q", name, cmd.name)
 		}
+		if cmd.usage == "" {
+			t.Errorf("command %q has no usage", name)
+		}
 		if cmd.callback == nil {
 			t.Errorf("command %q has no callback", name)
 		}
@@ -178,6 +181,57 @@ func TestCommandList(t *testing.T) {
 				t.Fatalf("commandList() error = %v, wantErr %v", err, tc.wantErr)
 			}
 		})
+	}
+}
+
+func TestCommandHelp(t *testing.T) {
+	tt := map[string]struct {
+		args    []string
+		wantErr bool
+		want    []string
+	}{
+		"all commands": {
+			args:    []string{},
+			wantErr: false,
+			want:    []string{"add:", "list:", "delete:", "help:"},
+		},
+		"specific command": {
+			args:    []string{"add"},
+			wantErr: false,
+			want:    []string{"add:", "Add a task."},
+		},
+		"unknown command": {
+			args:    []string{"nope"},
+			wantErr: true,
+			want:    []string{},
+		},
+	}
+
+	for name, tc := range tt {
+		t.Run(name, func(t *testing.T) {
+			s := store.NewStore()
+			err := commandHelp(s, tc.args...)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("commandHelp() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestFormatHelpLine(t *testing.T) {
+	got := formatHelpLine("add <description>", "Add a task.", 20)
+	if !strings.Contains(got, "add <description>") {
+		t.Errorf("formatHelpLine() missing usage")
+	}
+	if !strings.Contains(got, "Add a task.") {
+		t.Errorf("formatHelpLine() missing description")
+	}
+}
+
+func TestMaxUsageLength(t *testing.T) {
+	got := maxUsageLength(getCommands())
+	if got <= 0 {
+		t.Errorf("maxUsageLength() = %d, want > 0", got)
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/tonyserranodev/task-tracker-cli/internal/store"
+	"github.com/tonyserranodev/task-tracker-cli/internal/style"
 )
 
 // commandAdd creates a new task from args and stores it.
@@ -23,7 +24,7 @@ func commandAdd(st *store.Store, args ...string) error {
 		return err
 	}
 
-	fmt.Println("Task added successfully!")
+	fmt.Println(style.Style{Foreground: style.Green, Bold: true}.Apply("Task added!"))
 
 	return nil
 }

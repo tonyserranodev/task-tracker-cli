@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/tonyserranodev/task-tracker-cli/internal/store"
+	"github.com/tonyserranodev/task-tracker-cli/internal/style"
 )
 
 // commandUpdate changes the description of the task with the given ID.
@@ -27,6 +28,8 @@ func commandUpdate(st *store.Store, args ...string) error {
 		return err
 	}
 
-	fmt.Printf("Task with id %v has been updated!\n", id)
+	msg := fmt.Sprintf("Task with id %v has been updated!\n", id)
+	fmt.Println(style.Style{Foreground: style.Green, Bold: true}.Apply(msg))
+
 	return nil
 }

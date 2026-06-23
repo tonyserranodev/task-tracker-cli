@@ -22,7 +22,7 @@ Run without arguments to see a short usage message.
 
 ## Commands
 
-### Add a task
+### Add a task: `add <description>`
 
 ```bash
 ./task-tracker-cli add "Buy groceries"
@@ -30,7 +30,7 @@ Run without arguments to see a short usage message.
 
 Creates a new task with status `todo` and prints the assigned task ID.
 
-### List all tasks
+### List all tasks: `list`
 
 ```bash
 ./task-tracker-cli list
@@ -38,15 +38,15 @@ Creates a new task with status `todo` and prints the assigned task ID.
 
 Displays all tasks in a bordered table with ID, description, status, creation time, and last update time.
 
-### Update a task description
+### Update a task description: `update <id> <description>`
 
 ```bash
-task-tracker-cli update 1 "Buy groceries and milk"
+./task-tracker-cli update 1 "Buy groceries and milk"
 ```
 
 Changes the description of the task with ID `1`.
 
-### Mark a task status
+### Mark a task status: `mark <id> <status>`
 
 ```bash
 ./task-tracker-cli mark 1 done
@@ -58,7 +58,7 @@ Valid statuses are:
 - `in-progress`
 - `done`
 
-### Delete a task
+### Delete a task: `delete <id>`
 
 ```bash
 ./task-tracker-cli delete 1
@@ -66,7 +66,7 @@ Valid statuses are:
 
 Removes the task with ID `1`.
 
-### Show help
+### Show help: `help [command]`
 
 ```bash
 ./task-tracker-cli help
