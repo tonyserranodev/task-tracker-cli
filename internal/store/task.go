@@ -1,29 +1,112 @@
 package store
 
-import "time"
+import (
+	"errors"
+	"fmt"
+	"os"
+	"sync/atomic"
+	"time"
 
-type Description int
+	"github.com/tonyserranodev/task-tracker-cli/internal/style"
+)
+
+// Status represents the possible states of a task.
+type Status int
 
 const (
-	Todo Description = iota
+	// Todo indicates a task that has not been started.
+	Todo Status = iota
+	// InProgress indicates a task that is currently being worked on.
 	InProgress
+	// Done indicates a completed task.
 	Done
 )
 
-var descriptionName = map[Description]string{
+// NewStatus converts a status string into a Status value.
+func NewStatus(status string) Status {
+	switch status {
+	case "todo":
+		return Todo
+	case "in-progress":
+		return InProgress
+	case "done":
+		return Done
+	default:
+		return Todo
+	}
+}
+
+// statusName maps each Status to its string representation.
+var statusName = map[Status]string{
 	Todo:       "todo",
 	InProgress: "in progress",
 	Done:       "done",
 }
 
-func (d Description) String() string {
-	return descriptionName[d]
+// String returns the string representation of a task status.
+func (d Status) String() string {
+	return statusName[d]
 }
 
+// Task represents a single task in the task tracker.
 type Task struct {
-	ID          int       `json:"id"`
+	ID          int64     `json:"id"`
 	Description string    `json:"description"`
 	Status      string    `json:"status"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// String returns a colored, human-readable summary of the task.
+func (t Task) String() string {
+	return fmt.Sprintf("%v. %s %s %s, %s",
+		style.Style{Foreground: style.Blue, Bold: true}.Apply(fmt.Sprint(t.ID)),
+		t.Description,
+		style.Style{Foreground: style.Green}.Apply(t.Status),
+		t.CreatedAt.Format(time.RFC822),
+		t.UpdatedAt.Format(time.RFC822))
+}
+
+// taskID holds the counter used to generate unique task IDs.
+var taskID atomic.Int64
+
+// NewTask creates a new Task with the given description and a unique ID.
+func NewTask(desc string) Task {
+
+	newTask := Task{
+		ID:          taskID.Add(1),
+		Description: desc,
+		Status:      statusName[Todo],
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	return newTask
+}
+
+// LoadTasks reads tasks from disk into the store if the file exists.
+func (s *Store) LoadTasks() error {
+	if !fileExists("tasks.json") {
+		return nil
+	}
+	loadedTasks, err := s.GetAll()
+	if err != nil {
+		return err
+	}
+	s.Tasks = loadedTasks
+
+	return nil
+}
+
+// fileExists reports whether the named file exists.
+func fileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	if err == nil {
+		return true
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+
+	return false
 }

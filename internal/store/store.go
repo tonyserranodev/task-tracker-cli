@@ -1,67 +1,88 @@
+// Package store handles persistent storage and retrieval of tasks.
 package store
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
-	"sync/atomic"
 	"time"
 )
 
+// Store holds the in-memory task list and persists it to disk.
 type Store struct {
 	Tasks []Task
 }
 
+// NewStore creates an empty Store.
 func NewStore() *Store {
-
 	return &Store{
 		Tasks: []Task{},
 	}
 }
 
-func (s *Store) LoadTasks() error {
-	if !fileExists("tasks.json") {
-		return nil
-	}
-	loadedTasks, err := s.GetAll()
-	if err != nil {
-		return err
-	}
-	s.Tasks = loadedTasks
+// FILEPATH is the default file used to persist tasks.
+const FILEPATH = `tasks.json`
 
-	return nil
-}
-
-var idCounter atomic.Int64
-
-func NewTask(desc string) Task {
-	return Task{
-		ID:          int(idCounter.Add(1)),
-		Description: desc,
-		CreatedAt:   time.Now(),
-	}
-}
-
+// Add appends a task to the store and writes the task list to disk.
 func (s *Store) Add(task Task) error {
 	s.Tasks = append(s.Tasks, task)
-	file, err := os.Create("tasks.json")
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	err = encoder.Encode(s.Tasks)
+	err := s.SaveTasks()
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
+// UpdateDescription changes the description of the task with the given ID.
+func (s *Store) UpdateDescription(id int64, newDescription string) error {
+	for i, t := range s.Tasks {
+		if t.ID == id {
+			s.Tasks[i].Description = newDescription
+			s.Tasks[i].UpdatedAt = time.Now()
+
+			if err := s.SaveTasks(); err != nil {
+				return err
+			}
+
+			return nil
+		}
+	}
+
+	return fmt.Errorf("no task found with id, %v", id)
+}
+
+// UpdateStatus changes the status of the task with the given ID.
+func (s *Store) UpdateStatus(id int64, newStatus Status) error {
+	for i, t := range s.Tasks {
+		if t.ID == id {
+			s.Tasks[i].Status = statusName[newStatus]
+			s.Tasks[i].UpdatedAt = time.Now()
+
+			if err := s.SaveTasks(); err != nil {
+				return err
+			}
+
+			return nil
+		}
+	}
+
+	return fmt.Errorf("no task found with id, %v", id)
+}
+
+// GetByID returns the task with the given ID, or an error if not found.
+func (s *Store) GetByID(id int64) (Task, error) {
+	for _, t := range s.Tasks {
+		if t.ID == id {
+			return t, nil
+		}
+	}
+
+	return Task{}, fmt.Errorf("no task found with id, %v", id)
+}
+
+// GetAll reads all tasks from disk and updates the global ID counter.
 func (s *Store) GetAll() ([]Task, error) {
-	file, err := os.Open("tasks.json")
+	file, err := os.Open(FILEPATH)
 	if err != nil {
 		fmt.Println("Error opening file")
 		return []Task{}, err
@@ -75,18 +96,52 @@ func (s *Store) GetAll() ([]Task, error) {
 	if err != nil {
 		return []Task{}, err
 	}
+	updateCounter(tasks)
 
 	return tasks, nil
 }
 
-func fileExists(filename string) bool {
-	_, err := os.Stat(filename)
-	if err == nil {
-		return true
+// updateCounter sets the task ID counter to the highest existing task ID.
+func updateCounter(tasks []Task) {
+	var max int64
+	for _, task := range tasks {
+		if task.ID > max {
+			max = task.ID
+		}
 	}
-	if errors.Is(err, os.ErrNotExist) {
-		return false
+	taskID.Store(max)
+}
+
+// Delete removes the task with the given ID from the store.
+func (s *Store) Delete(id int64) error {
+	for i, task := range s.Tasks {
+		if task.ID == id {
+			newTasks := append(s.Tasks[:i], s.Tasks[i+1:]...)
+			s.Tasks = newTasks
+			if err := s.SaveTasks(); err != nil {
+				return err
+			}
+			return nil
+		}
 	}
 
-	return false
+	return fmt.Errorf("no task with id %v", id)
+}
+
+// SaveTasks writes the current in-memory task list to disk.
+func (s *Store) SaveTasks() error {
+
+	file, err := os.Create(FILEPATH)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	err = encoder.Encode(s.Tasks)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
