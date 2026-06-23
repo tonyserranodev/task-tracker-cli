@@ -15,17 +15,23 @@ func commandList(st *store.Store, _ ...string) error {
 		return nil
 	}
 
+	fmt.Println(formatTaskTable(st.Tasks))
+
+	return nil
+}
+
+// formatTaskTable returns a styled, boxed table of tasks.
+func formatTaskTable(tasks []store.Task) string {
 	blueBold := style.Style{Foreground: style.Blue, Bold: true}
 	green := style.Style{Foreground: style.Green}
 
-	// Compute the visible width needed for each column so everything lines up.
 	idW := len("ID")
 	descW := len("Description")
 	statusW := len("Status")
 	createdW := len("Created")
 	updatedW := len("Updated")
 
-	for _, task := range st.Tasks {
+	for _, task := range tasks {
 		idW = max(idW, len(fmt.Sprint(task.ID)))
 		descW = max(descW, len(task.Description))
 		statusW = max(statusW, len(task.Status))
@@ -33,7 +39,6 @@ func commandList(st *store.Store, _ ...string) error {
 		updatedW = max(updatedW, len(task.UpdatedAt.Format(time.RFC822)))
 	}
 
-	// Helper to join one row's columns padded to their visible widths.
 	row := func(cols ...string) string {
 		return style.PadRight(cols[0], idW) + " " +
 			style.PadRight(cols[1], descW) + " " +
@@ -46,7 +51,7 @@ func commandList(st *store.Store, _ ...string) error {
 		row(blueBold.Apply("ID"), blueBold.Apply("Description"), blueBold.Apply("Status"), blueBold.Apply("Created"), blueBold.Apply("Updated")),
 	}
 
-	for _, task := range st.Tasks {
+	for _, task := range tasks {
 		lines = append(lines, row(
 			blueBold.Apply(fmt.Sprint(task.ID)),
 			task.Description,
@@ -56,7 +61,5 @@ func commandList(st *store.Store, _ ...string) error {
 		))
 	}
 
-	fmt.Println(style.Box(0, lines, style.SingleBorders))
-
-	return nil
+	return style.Box(0, lines, style.SingleBorders)
 }

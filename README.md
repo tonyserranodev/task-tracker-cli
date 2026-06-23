@@ -15,7 +15,7 @@ This produces an executable named `task-tracker-cli` in the current directory.
 ## Usage
 
 ```bash
-task-tracker-cli <command> [args...]
+./task-tracker-cli <command> [args...]
 ```
 
 Run without arguments to see a short usage message.
@@ -25,7 +25,7 @@ Run without arguments to see a short usage message.
 ### Add a task
 
 ```bash
-task-tracker-cli add "Buy groceries"
+./task-tracker-cli add "Buy groceries"
 ```
 
 Creates a new task with status `todo` and prints the assigned task ID.
@@ -33,7 +33,7 @@ Creates a new task with status `todo` and prints the assigned task ID.
 ### List all tasks
 
 ```bash
-task-tracker-cli list
+./task-tracker-cli list
 ```
 
 Displays all tasks in a bordered table with ID, description, status, creation time, and last update time.
@@ -49,7 +49,7 @@ Changes the description of the task with ID `1`.
 ### Mark a task status
 
 ```bash
-task-tracker-cli mark 1 done
+./task-tracker-cli mark 1 done
 ```
 
 Valid statuses are:
@@ -61,7 +61,7 @@ Valid statuses are:
 ### Delete a task
 
 ```bash
-task-tracker-cli delete 1
+./task-tracker-cli delete 1
 ```
 
 Removes the task with ID `1`.
@@ -69,7 +69,7 @@ Removes the task with ID `1`.
 ### Show help
 
 ```bash
-task-tracker-cli help
+./task-tracker-cli help
 ```
 
 Prints a list of all commands and their descriptions.
@@ -77,7 +77,7 @@ Prints a list of all commands and their descriptions.
 To see help for a specific command:
 
 ```bash
-task-tracker-cli help add
+./task-tracker-cli help add
 ```
 
 ## Data storage

@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/tonyserranodev/task-tracker-cli/internal/store"
 )
@@ -174,6 +176,40 @@ func TestCommandList(t *testing.T) {
 			err := commandList(s)
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("commandList() error = %v, wantErr %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestFormatTaskTable(t *testing.T) {
+	fixed := time.Date(2024, time.June, 1, 12, 0, 0, 0, time.UTC)
+
+	tt := map[string]struct {
+		tasks []store.Task
+		want  []string
+	}{
+		"single task": {
+			tasks: []store.Task{
+				{ID: 1, Description: "Buy milk", Status: "todo", CreatedAt: fixed, UpdatedAt: fixed},
+			},
+			want: []string{"ID", "Description", "Buy milk", "todo"},
+		},
+		"multiple tasks": {
+			tasks: []store.Task{
+				{ID: 1, Description: "One", Status: "todo", CreatedAt: fixed, UpdatedAt: fixed},
+				{ID: 2, Description: "Two", Status: "done", CreatedAt: fixed, UpdatedAt: fixed},
+			},
+			want: []string{"One", "Two", "done"},
+		},
+	}
+
+	for name, tc := range tt {
+		t.Run(name, func(t *testing.T) {
+			got := formatTaskTable(tc.tasks)
+			for _, w := range tc.want {
+				if !strings.Contains(got, w) {
+					t.Errorf("formatTaskTable() output missing %q", w)
+				}
 			}
 		})
 	}
