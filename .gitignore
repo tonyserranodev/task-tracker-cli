@@ -1,2 +1,3 @@
 task-tracker-cli
 tasks.json
+justfile
