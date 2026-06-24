@@ -22,15 +22,19 @@ func commandList(st *store.Store, _ ...string) error {
 
 // formatTaskTable returns a styled, boxed table of tasks.
 func formatTaskTable(tasks []store.Task) string {
+	// create colors
 	blueBold := style.Style{Foreground: style.Blue, Bold: true}
 	green := style.Style{Foreground: style.Green}
 
+	// get the widths for each heading of the task table
 	idW := len("ID")
 	descW := len("Description")
 	statusW := len("Status")
 	createdW := len("Created")
 	updatedW := len("Updated")
 
+	// update these widths to be the longest width
+	// between the task table heading and the associated field
 	for _, task := range tasks {
 		idW = max(idW, len(fmt.Sprint(task.ID)))
 		descW = max(descW, len(task.Description))
@@ -39,6 +43,8 @@ func formatTaskTable(tasks []store.Task) string {
 		updatedW = max(updatedW, len(task.UpdatedAt.Format(time.RFC822)))
 	}
 
+	// helper function to right pad each field based on the widths calculated up.
+	// this ensures that all fields are aligned with their heading and with each other.
 	row := func(cols ...string) string {
 		return style.PadRight(cols[0], idW) + " " +
 			style.PadRight(cols[1], descW) + " " +
@@ -47,10 +53,12 @@ func formatTaskTable(tasks []store.Task) string {
 			style.PadRight(cols[4], updatedW)
 	}
 
+	// apply styling to each heading label
 	lines := []string{
 		row(blueBold.Apply("ID"), blueBold.Apply("Description"), blueBold.Apply("Status"), blueBold.Apply("Created"), blueBold.Apply("Updated")),
 	}
 
+	// apply styling to each task field
 	for _, task := range tasks {
 		lines = append(lines, row(
 			blueBold.Apply(fmt.Sprint(task.ID)),
