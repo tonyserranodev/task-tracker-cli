@@ -27,8 +27,12 @@ func commandMark(st *store.Store, args ...string) error {
 		return err
 	}
 
-	msg := fmt.Sprintf("Task with id %v has been marked %v!\n", id, status)
-	fmt.Println(style.Style{Foreground: style.Green, Bold: true}.Apply(msg))
+	msg, err := style.Render(fmt.Sprintf("Task with id %v has been marked %v!\n", id, status), "green", "bold")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(msg)
 
 	return nil
 }

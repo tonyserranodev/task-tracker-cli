@@ -25,8 +25,12 @@ func commandDelete(st *store.Store, args ...string) error {
 		return err
 	}
 
-	msg := fmt.Sprintf("Task %v deleted!\n", id)
-	fmt.Println(style.Style{Foreground: style.Green, Bold: true}.Apply(msg))
+	msg, err := style.Render(fmt.Sprintf("Task %v deleted!", id), "green", "bold")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(msg)
 
 	return nil
 }

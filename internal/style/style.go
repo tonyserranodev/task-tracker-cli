@@ -2,6 +2,7 @@
 package style
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -34,70 +35,142 @@ func PadRight(s string, width int) string {
 type Color int
 
 const (
-	Reset   Color = iota // Reset restores the terminal's default color.
-	Black                // Black is the black ANSI color.
-	Red                  // Red is the red ANSI color.
-	Green                // Green is the green ANSI color.
-	Yellow               // Yellow is the yellow ANSI color.
-	Blue                 // Blue is the blue ANSI color.
-	Magenta              // Magenta is the magenta ANSI color.
-	Cyan                 // Cyan is the cyan ANSI color.
-	White                // White is the white ANSI color.
+	_ Color = iota
+	Black
+	Red
+	Green
+	Yellow
+	Blue
+	Magenta
+	Cyan
+	White
 )
 
+var colors = map[string]Color{
+	"black":   Black,
+	"red":     Red,
+	"green":   Green,
+	"yellow":  Yellow,
+	"blue":    Blue,
+	"magenta": Magenta,
+	"cyan":    Cyan,
+	"white":   White,
+}
+
 // FG returns the ANSI escape sequence for this color as a foreground color.
-// Reset returns the default foreground sequence rather than black.
+// The zero value returns an empty string.
 func (c Color) FG() string {
-	if c == Reset {
-		return "\x1b[39m"
+	if c == 0 {
+		return ""
 	}
+
 	return fmt.Sprintf("\x1b[3%dm", c-1)
 }
 
 // BG returns the ANSI escape sequence for this color as a background color.
-// Reset returns the default background sequence rather than black.
+// The zero value returns an empty string.
 func (c Color) BG() string {
-	if c == Reset {
-		return "\x1b[49m"
+	if c == 0 {
+		return ""
 	}
+
 	return fmt.Sprintf("\x1b[4%dm", c-1)
 }
 
+// Decoration represents an ANSI text decoration.
+type Decoration int
+
 const (
-	Bold      = "\x1b[1m" // Bold enables bold text.
-	Dim       = "\x1b[2m" // Dim enables dim text.
-	Underline = "\x1b[4m" // Underline enables underlined text.
-	Clear     = "\x1b[0m" // Clear resets all styles and colors.
+	_ Decoration = iota
+	Bold
+	Dim
+	Underline
 )
 
-// Style holds foreground/background colors and bold formatting for terminal output.
+var decorations = map[string]Decoration{
+	"bold":      Bold,
+	"dim":       Dim,
+	"underline": Underline,
+}
+
+// Clear removes all styling and colors.
+const Clear = "\x1b[0m"
+
+// Decorate returns the ANSI escape sequence for this decoration.
+func (d Decoration) Decorate() string {
+	switch d {
+	case Bold:
+		return "\x1b[1m"
+	case Dim:
+		return "\x1b[2m"
+	case Underline:
+		return "\x1b[4m"
+	default:
+		return ""
+	}
+}
+
+// Style holds foreground/background colors and a decoration for terminal output.
 type Style struct {
 	Foreground Color
 	Background Color
-	Bold       bool
+	Decoration Decoration
 }
 
 // Apply returns text wrapped in the ANSI escape codes described by s.
 func (s Style) Apply(text string) string {
 	var b strings.Builder
 
-	// Only emit color codes when a color was explicitly requested.
-	// Reset is skipped so it does not set the foreground/background to black.
-	if s.Foreground != Reset {
-		b.WriteString(s.Foreground.FG())
-	}
-	if s.Background != Reset {
-		b.WriteString(s.Background.BG())
+	if s.Decoration != 0 {
+		b.WriteString(s.Decoration.Decorate())
 	}
 
-	if s.Bold {
-		b.WriteString(Bold)
+	if s.Foreground != 0 {
+		b.WriteString(s.Foreground.FG())
+	}
+
+	if s.Background != 0 {
+		b.WriteString(s.Background.BG())
 	}
 
 	b.WriteString(text)
 	b.WriteString(Clear)
 
 	return b.String()
+}
+
+// Render applies styling arguments to text and returns the result.
+// Valid arguments are color names ("red"), background colors ("bg-red"),
+// and decorations ("bold", "dim", "underline"). One to three arguments are accepted.
+func Render(text string, args ...string) (string, error) {
+	if len(args) < 1 || len(args) > 3 {
+		return "", errors.New("must pass between 1 and 3 arguments")
+	}
+
+	var style Style
+
+	for _, arg := range args {
+		if strings.HasPrefix(arg, "bg-") {
+			colorName := strings.TrimPrefix(arg, "bg-")
+			if color, ok := colors[colorName]; ok {
+				style.Background = color
+				continue
+			}
+		}
+
+		if color, ok := colors[arg]; ok {
+			style.Foreground = color
+			continue
+		}
+
+		if dec, ok := decorations[arg]; ok {
+			style.Decoration = dec
+			continue
+		}
+
+		return "", fmt.Errorf("unknown argument passed %s", arg)
+	}
+	return style.Apply(text), nil
 }
 
 // Borders defines the runes used to draw a box in the terminal.
@@ -141,14 +214,11 @@ func Box(width int, lines []string, b Borders) string {
 
 	var out strings.Builder
 
-	//Draw top border
 	out.WriteString(top)
 	out.WriteString("\n")
 
 	for _, line := range lines {
-		// Prevent pad from going negative
-		pad := max(
-			innerWidth-visibleWidth(line), 0)
+		pad := max(innerWidth-visibleWidth(line), 0)
 
 		out.WriteString(string(b.Vertical))
 		out.WriteString(line)
@@ -157,7 +227,6 @@ func Box(width int, lines []string, b Borders) string {
 		out.WriteString("\n")
 	}
 
-	//Draw bottom border
 	out.WriteString(bottom)
 
 	return out.String()

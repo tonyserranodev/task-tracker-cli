@@ -18,7 +18,12 @@ func commandHelp(st *store.Store, args ...string) error {
 		lines := make([]string, 0, len(commands))
 		for _, name := range names {
 			cmd := commands[name]
-			lines = append(lines, formatHelpLine(cmd.usage, cmd.description, maxUsageLen))
+			msg, err := formatHelpLine(cmd.usage, cmd.description, maxUsageLen)
+			if err != nil {
+				return err
+			}
+
+			lines = append(lines, msg)
 		}
 		fmt.Println(style.Box(0, lines, style.SingleBorders))
 		return nil
@@ -29,7 +34,12 @@ func commandHelp(st *store.Store, args ...string) error {
 		return fmt.Errorf("unknown command: %s", args[0])
 	}
 
-	fmt.Println(style.Box(0, []string{formatHelpLine(command.usage, command.description, len(command.usage))}, style.SingleBorders))
+	msg, err := formatHelpLine(command.usage, command.description, len(command.usage))
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(style.Box(0, []string{msg}, style.SingleBorders))
 	return nil
 }
 
@@ -57,8 +67,13 @@ func maxUsageLength(commands map[string]cliCommand) int {
 // formatHelpLine returns a styled "usage: description" help entry.
 // usageWidth is the length of the longest usage string; it is used to pad
 // "usage:" so the descriptions align across lines.
-func formatHelpLine(usage, description string, usageWidth int) string {
-	usageStyle := style.Style{Foreground: style.Cyan, Bold: true}
-	padded := style.PadRight(usageStyle.Apply(usage+":"), usageWidth+1)
-	return padded + " " + description
+func formatHelpLine(usage, description string, usageWidth int) (string, error) {
+	styledUsage, err := style.Render(usage, "cyan", "bold")
+	if err != nil {
+		return "", err
+	}
+
+	padded := style.PadRight(styledUsage+":", usageWidth+1)
+
+	return padded + " " + description, nil
 }

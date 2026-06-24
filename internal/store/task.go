@@ -2,12 +2,9 @@ package store
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"sync/atomic"
 	"time"
-
-	"github.com/tonyserranodev/task-tracker-cli/internal/style"
 )
 
 // Status represents the possible states of a task.
@@ -55,16 +52,6 @@ type Task struct {
 	Status      string    `json:"status"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
-}
-
-// String returns a colored, human-readable summary of the task.
-func (t Task) String() string {
-	return fmt.Sprintf("%v. %s %s %s, %s",
-		style.Style{Foreground: style.Blue, Bold: true}.Apply(fmt.Sprint(t.ID)),
-		t.Description,
-		style.Style{Foreground: style.Green}.Apply(t.Status),
-		t.CreatedAt.Format(time.RFC822),
-		t.UpdatedAt.Format(time.RFC822))
 }
 
 // taskID holds the counter used to generate unique task IDs.

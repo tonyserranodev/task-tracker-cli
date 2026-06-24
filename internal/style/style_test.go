@@ -55,7 +55,6 @@ func TestColorFG(t *testing.T) {
 		color Color
 		want  string
 	}{
-		"reset": {Reset, "\x1b[39m"},
 		"red":   {Red, "\x1b[31m"},
 		"green": {Green, "\x1b[32m"},
 		"blue":  {Blue, "\x1b[34m"},
@@ -77,9 +76,8 @@ func TestColorBG(t *testing.T) {
 		color Color
 		want  string
 	}{
-		"reset": {Reset, "\x1b[49m"},
-		"red":   {Red, "\x1b[41m"},
-		"blue":  {Blue, "\x1b[44m"},
+		"red":  {Red, "\x1b[41m"},
+		"blue": {Blue, "\x1b[44m"},
 	}
 
 	for name, tc := range tt {
@@ -109,17 +107,27 @@ func TestStyleApply(t *testing.T) {
 			want:  "\x1b[44mx\x1b[0m",
 		},
 		"bold only": {
-			style: Style{Bold: true},
+			style: Style{Decoration: Bold},
 			input: "x",
 			want:  "\x1b[1mx\x1b[0m",
 		},
-		"combined": {
-			style: Style{Foreground: Green, Background: Black, Bold: true},
+		"dim only": {
+			style: Style{Decoration: Dim},
 			input: "x",
-			want:  "\x1b[32m\x1b[40m\x1b[1mx\x1b[0m",
+			want:  "\x1b[2mx\x1b[0m",
 		},
-		"reset skipped": {
-			style: Style{Foreground: Reset, Background: Reset},
+		"underline only": {
+			style: Style{Decoration: Underline},
+			input: "x",
+			want:  "\x1b[4mx\x1b[0m",
+		},
+		"combined": {
+			style: Style{Foreground: Green, Background: Black, Decoration: Bold},
+			input: "x",
+			want:  "\x1b[1m\x1b[32m\x1b[40mx\x1b[0m",
+		},
+		"no styling": {
+			style: Style{},
 			input: "x",
 			want:  "x\x1b[0m",
 		},
@@ -130,6 +138,90 @@ func TestStyleApply(t *testing.T) {
 			got := tc.style.Apply(tc.input)
 			if got != tc.want {
 				t.Errorf("Apply(%q) = %q, want %q", tc.input, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestRender(t *testing.T) {
+	tt := map[string]struct {
+		text string
+		args []string
+		want string
+	}{
+		"foreground": {
+			text: "x",
+			args: []string{"red"},
+			want: "\x1b[31mx\x1b[0m",
+		},
+		"background": {
+			text: "x",
+			args: []string{"bg-blue"},
+			want: "\x1b[44mx\x1b[0m",
+		},
+		"decoration": {
+			text: "x",
+			args: []string{"bold"},
+			want: "\x1b[1mx\x1b[0m",
+		},
+		"foreground and decoration": {
+			text: "x",
+			args: []string{"green", "bold"},
+			want: "\x1b[1m\x1b[32mx\x1b[0m",
+		},
+		"foreground background decoration": {
+			text: "x",
+			args: []string{"green", "bg-black", "bold"},
+			want: "\x1b[1m\x1b[32m\x1b[40mx\x1b[0m",
+		},
+		"background prefix parsed": {
+			text: "x",
+			args: []string{"bg-red"},
+			want: "\x1b[41mx\x1b[0m",
+		},
+	}
+
+	for name, tc := range tt {
+		t.Run(name, func(t *testing.T) {
+			got, err := Render(tc.text, tc.args...)
+			if err != nil {
+				t.Fatalf("Render() unexpected error = %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("Render(%q, %v) = %q, want %q", tc.text, tc.args, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestRenderErrors(t *testing.T) {
+	tt := map[string]struct {
+		text string
+		args []string
+	}{
+		"no args": {
+			text: "x",
+			args: []string{},
+		},
+		"too many args": {
+			text: "x",
+			args: []string{"red", "bold", "bg-blue", "underline"},
+		},
+		"unknown arg": {
+			text: "x",
+			args: []string{"not-a-style"},
+		},
+		"unknown bg prefix": {
+			text: "x",
+			args: []string{"bg-notacolor"},
+		},
+	}
+
+	for name, tc := range tt {
+		t.Run(name, func(t *testing.T) {
+			got, err := Render(tc.text, tc.args...)
+			if err == nil {
+				t.Errorf("Render(%q, %v) = %q, want error", tc.text, tc.args, got)
 			}
 		})
 	}

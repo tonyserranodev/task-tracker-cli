@@ -24,7 +24,12 @@ func commandAdd(st *store.Store, args ...string) error {
 		return err
 	}
 
-	fmt.Println(style.Style{Foreground: style.Green, Bold: true}.Apply("Task added!"))
+	msg, err := style.Render("Task added!", "bold", "green")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(msg)
 
 	return nil
 }

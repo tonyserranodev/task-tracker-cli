@@ -11,30 +11,35 @@ import (
 // commandList prints all tasks in the store.
 func commandList(st *store.Store, _ ...string) error {
 	if len(st.Tasks) == 0 {
-		fmt.Println(style.Style{Foreground: style.Yellow}.Apply("no tasks yet"))
+		msg, err := style.Render("no tasks yet", "yellow")
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(msg)
+
 		return nil
 	}
 
-	fmt.Println(formatTaskTable(st.Tasks))
+	taskTable, err := formatTaskTable(st.Tasks)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(taskTable)
 
 	return nil
 }
 
 // formatTaskTable returns a styled, boxed table of tasks.
-func formatTaskTable(tasks []store.Task) string {
-	// create colors
-	blueBold := style.Style{Foreground: style.Blue, Bold: true}
-	green := style.Style{Foreground: style.Green}
-
-	// get the widths for each heading of the task table
+func formatTaskTable(tasks []store.Task) (string, error) {
 	idW := len("ID")
 	descW := len("Description")
 	statusW := len("Status")
 	createdW := len("Created")
 	updatedW := len("Updated")
 
-	// update these widths to be the longest width
-	// between the task table heading and the associated field
+	// Use the longest value in each column as the column width.
 	for _, task := range tasks {
 		idW = max(idW, len(fmt.Sprint(task.ID)))
 		descW = max(descW, len(task.Description))
@@ -43,8 +48,6 @@ func formatTaskTable(tasks []store.Task) string {
 		updatedW = max(updatedW, len(task.UpdatedAt.Format(time.RFC822)))
 	}
 
-	// helper function to right pad each field based on the widths calculated up.
-	// this ensures that all fields are aligned with their heading and with each other.
 	row := func(cols ...string) string {
 		return style.PadRight(cols[0], idW) + " " +
 			style.PadRight(cols[1], descW) + " " +
@@ -53,21 +56,41 @@ func formatTaskTable(tasks []store.Task) string {
 			style.PadRight(cols[4], updatedW)
 	}
 
-	// apply styling to each heading label
+	headers := []string{"ID", "Description", "Status", "Created", "Updated"}
+	styledHeaders := make([]string, len(headers))
+
+	for i, h := range headers {
+		styled, err := style.Render(h, "blue", "bold")
+		if err != nil {
+			return "", err
+		}
+		styledHeaders[i] = styled
+	}
+
 	lines := []string{
-		row(blueBold.Apply("ID"), blueBold.Apply("Description"), blueBold.Apply("Status"), blueBold.Apply("Created"), blueBold.Apply("Updated")),
+		row(styledHeaders...),
 	}
 
-	// apply styling to each task field
 	for _, task := range tasks {
-		lines = append(lines, row(
-			blueBold.Apply(fmt.Sprint(task.ID)),
-			task.Description,
-			green.Apply(task.Status),
-			task.CreatedAt.Format(time.RFC822),
-			task.UpdatedAt.Format(time.RFC822),
-		))
+		styledID, err := style.Render(fmt.Sprint(task.ID), "blue")
+		if err != nil {
+			return "", err
+		}
+
+		styledStatus, err := style.Render(task.Status, "green")
+		if err != nil {
+			return "", err
+		}
+
+		lines = append(lines,
+			row(
+				styledID,
+				task.Description,
+				styledStatus,
+				task.CreatedAt.Format(time.RFC822),
+				task.UpdatedAt.Format(time.RFC822),
+			))
 	}
 
-	return style.Box(0, lines, style.SingleBorders)
+	return style.Box(0, lines, style.SingleBorders), nil
 }

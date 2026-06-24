@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"os"
 	"time"
-
-	"github.com/tonyserranodev/task-tracker-cli/internal/style"
 )
 
 // Store holds the in-memory task list and persists it to disk.
@@ -86,7 +84,6 @@ func (s *Store) GetByID(id int64) (Task, error) {
 func (s *Store) GetAll() ([]Task, error) {
 	file, err := os.Open(FILEPATH)
 	if err != nil {
-		fmt.Println(style.Style{Foreground: style.Red, Bold: true}.Apply("Error opening file"))
 		return []Task{}, err
 	}
 	defer file.Close()

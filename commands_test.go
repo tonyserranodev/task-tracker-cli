@@ -244,7 +244,7 @@ func TestCommandHelp(t *testing.T) {
 }
 
 func TestFormatHelpLine(t *testing.T) {
-	got := formatHelpLine("add <description>", "Add a task.", 20)
+	got, _ := formatHelpLine("add <description>", "Add a task.", 20)
 	if !strings.Contains(got, "add <description>") {
 		t.Errorf("formatHelpLine() missing usage")
 	}
@@ -284,7 +284,7 @@ func TestFormatTaskTable(t *testing.T) {
 
 	for name, tc := range tt {
 		t.Run(name, func(t *testing.T) {
-			got := formatTaskTable(tc.tasks)
+			got, _ := formatTaskTable(tc.tasks)
 			for _, w := range tc.want {
 				if !strings.Contains(got, w) {
 					t.Errorf("formatTaskTable() output missing %q", w)
