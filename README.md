@@ -1,3 +1,4 @@
+
 # Task Tracker CLI
 
 A small command-line tool for managing a personal task list. Tasks are stored locally in a `tasks.json` file.
@@ -18,7 +19,9 @@ This produces an executable named `task-tracker-cli` in the current directory.
 ./task-tracker-cli <command> [args...]
 ```
 
-Run without arguments to see a short usage message.
+## Example
+<img width="896" height="254" alt="task-track-cli usage general example" src="https://github.com/user-attachments/assets/6c9ccd4d-a1a3-425b-ba5a-fb34ff2db988" />
+
 
 ## Commands
 
