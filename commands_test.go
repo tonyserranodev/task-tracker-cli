@@ -1,13 +1,24 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/tonyserranodev/task-tracker-cli/internal/store"
 )
+
+// newTestTask returns a Task with a fixed ID and timestamps for use in tests.
+func newTestTask(id int64, description string) store.Task {
+	fixed := time.Date(2024, time.June, 1, 12, 0, 0, 0, time.UTC)
+	return store.Task{
+		ID:          id,
+		Description: description,
+		Status:      "todo",
+		CreatedAt:   fixed,
+		UpdatedAt:   fixed,
+	}
+}
 
 func TestGetCommands(t *testing.T) {
 	want := []string{"add", "list", "delete", "update", "mark", "help"}
@@ -37,14 +48,17 @@ func TestGetCommands(t *testing.T) {
 
 func TestCommandAdd(t *testing.T) {
 	t.Chdir(t.TempDir())
+	store.ResetTaskID()
+	defer store.ResetTaskID()
 
 	tt := map[string]struct {
 		args    []string
 		wantErr bool
 		wantLen int
+		wantID  int64
 	}{
-		"with description": {[]string{"Buy milk"}, false, 1},
-		"missing arg":      {[]string{}, true, 0},
+		"with description": {[]string{"Buy milk"}, false, 1, 1},
+		"missing arg":      {[]string{}, true, 0, 0},
 	}
 
 	for name, tc := range tt {
@@ -57,6 +71,9 @@ func TestCommandAdd(t *testing.T) {
 			if len(s.Tasks) != tc.wantLen {
 				t.Errorf("len(Tasks) = %d, want %d", len(s.Tasks), tc.wantLen)
 			}
+			if tc.wantID != 0 && s.Tasks[0].ID != tc.wantID {
+				t.Errorf("ID = %d, want %d", s.Tasks[0].ID, tc.wantID)
+			}
 		})
 	}
 }
@@ -64,22 +81,23 @@ func TestCommandAdd(t *testing.T) {
 func TestCommandDelete(t *testing.T) {
 	t.Chdir(t.TempDir())
 
-	for name, tc := range map[string]struct {
-		args    func(id int64) []string
+	tt := map[string]struct {
+		args    []string
 		wantErr bool
 		wantLen int
 	}{
-		"existing":    {func(id int64) []string { return []string{fmt.Sprint(id)} }, false, 0},
-		"missing arg": {func(id int64) []string { return []string{} }, true, 1},
-		"bad id":      {func(id int64) []string { return []string{"not-a-number"} }, true, 1},
-		"not found":   {func(id int64) []string { return []string{"99"} }, true, 1},
-	} {
+		"existing":    {[]string{"1"}, false, 0},
+		"missing arg": {[]string{}, true, 1},
+		"bad id":      {[]string{"not-a-number"}, true, 1},
+		"not found":   {[]string{"99"}, true, 1},
+	}
+
+	for name, tc := range tt {
 		t.Run(name, func(t *testing.T) {
 			s := store.NewStore()
-			task := store.NewTask("Task")
-			_ = s.Add(task)
+			s.Tasks = []store.Task{newTestTask(1, "Task")}
 
-			err := commandDelete(s, tc.args(task.ID)...)
+			err := commandDelete(s, tc.args...)
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("commandDelete() error = %v, wantErr %v", err, tc.wantErr)
 			}
@@ -93,30 +111,31 @@ func TestCommandDelete(t *testing.T) {
 func TestCommandUpdate(t *testing.T) {
 	t.Chdir(t.TempDir())
 
-	for name, tc := range map[string]struct {
-		args    func(id int64) []string
+	tt := []struct {
+		name    string
+		args    []string
 		wantErr bool
-		want    func(desc string) string
+		want    string
 	}{
-		"existing":     {func(id int64) []string { return []string{fmt.Sprint(id), "New desc"} }, false, func(string) string { return "New desc" }},
-		"missing args": {func(id int64) []string { return []string{fmt.Sprint(id)} }, true, func(desc string) string { return desc }},
-		"bad id":       {func(id int64) []string { return []string{"abc", "New desc"} }, true, func(desc string) string { return desc }},
-		"not found":    {func(id int64) []string { return []string{"99", "New desc"} }, true, func(desc string) string { return desc }},
-	} {
-		t.Run(name, func(t *testing.T) {
-			s := store.NewStore()
-			task := store.NewTask("Old desc")
-			_ = s.Add(task)
+		{"existing", []string{"1", "New desc"}, false, "New desc"},
+		{"missing args", []string{"1"}, true, "Old desc"},
+		{"bad id", []string{"abc", "New desc"}, true, "Old desc"},
+		{"not found", []string{"99", "New desc"}, true, "Old desc"},
+	}
 
-			err := commandUpdate(s, tc.args(task.ID)...)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			s := store.NewStore()
+			s.Tasks = []store.Task{newTestTask(1, "Old desc")}
+
+			err := commandUpdate(s, tc.args...)
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("commandUpdate() error = %v, wantErr %v", err, tc.wantErr)
 			}
 
-			got, _ := s.GetByID(task.ID)
-			want := tc.want("Old desc")
-			if got.Description != want {
-				t.Errorf("Description = %q, want %q", got.Description, want)
+			got, _ := s.GetByID(1)
+			if got.Description != tc.want {
+				t.Errorf("Description = %q, want %q", got.Description, tc.want)
 			}
 		})
 	}
@@ -125,27 +144,29 @@ func TestCommandUpdate(t *testing.T) {
 func TestCommandMark(t *testing.T) {
 	t.Chdir(t.TempDir())
 
-	for name, tc := range map[string]struct {
-		args    func(id int64) []string
+	tt := []struct {
+		name    string
+		args    []string
 		wantErr bool
 		want    string
 	}{
-		"existing":     {func(id int64) []string { return []string{fmt.Sprint(id), "done"} }, false, "done"},
-		"missing args": {func(id int64) []string { return []string{fmt.Sprint(id)} }, true, "todo"},
-		"bad id":       {func(id int64) []string { return []string{"abc", "done"} }, true, "todo"},
-		"not found":    {func(id int64) []string { return []string{"99", "done"} }, true, "todo"},
-	} {
-		t.Run(name, func(t *testing.T) {
-			s := store.NewStore()
-			task := store.NewTask("Task")
-			_ = s.Add(task)
+		{"existing", []string{"1", "done"}, false, "done"},
+		{"missing args", []string{"1"}, true, "todo"},
+		{"bad id", []string{"abc", "done"}, true, "todo"},
+		{"not found", []string{"99", "done"}, true, "todo"},
+	}
 
-			err := commandMark(s, tc.args(task.ID)...)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			s := store.NewStore()
+			s.Tasks = []store.Task{newTestTask(1, "Task")}
+
+			err := commandMark(s, tc.args...)
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("commandMark() error = %v, wantErr %v", err, tc.wantErr)
 			}
 
-			got, _ := s.GetByID(task.ID)
+			got, _ := s.GetByID(1)
 			if got.Status != tc.want {
 				t.Errorf("Status = %q, want %q", got.Status, tc.want)
 			}
@@ -154,6 +175,8 @@ func TestCommandMark(t *testing.T) {
 }
 
 func TestCommandList(t *testing.T) {
+	t.Chdir(t.TempDir())
+
 	tt := map[string]struct {
 		setup   func(*store.Store)
 		wantErr bool
@@ -164,8 +187,10 @@ func TestCommandList(t *testing.T) {
 		},
 		"with tasks": {
 			setup: func(s *store.Store) {
-				_ = s.Add(store.NewTask("One"))
-				_ = s.Add(store.NewTask("Two"))
+				s.Tasks = []store.Task{
+					newTestTask(1, "One"),
+					newTestTask(2, "Two"),
+				}
 			},
 			wantErr: false,
 		},

@@ -47,7 +47,9 @@ func TestStatusString(t *testing.T) {
 }
 
 func TestNewTask(t *testing.T) {
+	original := taskID.Load()
 	taskID.Store(0)
+	defer taskID.Store(original)
 
 	tt := []struct {
 		name       string

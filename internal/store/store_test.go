@@ -3,11 +3,23 @@ package store
 import (
 	"os"
 	"testing"
+	"time"
 )
+
+// testTask returns a Task with fixed timestamps for use in tests.
+func testTask(id int64, description string) Task {
+	fixed := time.Date(2024, time.June, 1, 12, 0, 0, 0, time.UTC)
+	return Task{
+		ID:          id,
+		Description: description,
+		Status:      statusName[Todo],
+		CreatedAt:   fixed,
+		UpdatedAt:   fixed,
+	}
+}
 
 func TestStoreAdd(t *testing.T) {
 	t.Chdir(t.TempDir())
-	taskID.Store(0)
 
 	tt := map[string]struct {
 		desc    string
@@ -20,7 +32,7 @@ func TestStoreAdd(t *testing.T) {
 	for name, tc := range tt {
 		t.Run(name, func(t *testing.T) {
 			s := NewStore()
-			task := NewTask(tc.desc)
+			task := testTask(1, tc.desc)
 
 			err := s.Add(task)
 			if (err != nil) != tc.wantErr {
@@ -39,10 +51,9 @@ func TestStoreAdd(t *testing.T) {
 
 func TestStoreUpdateDescription(t *testing.T) {
 	t.Chdir(t.TempDir())
-	taskID.Store(0)
 
 	s := NewStore()
-	_ = s.Add(NewTask("Old desc"))
+	s.Tasks = []Task{testTask(1, "Old desc")}
 
 	tt := map[string]struct {
 		id          int64
@@ -72,10 +83,9 @@ func TestStoreUpdateDescription(t *testing.T) {
 
 func TestStoreUpdateStatus(t *testing.T) {
 	t.Chdir(t.TempDir())
-	taskID.Store(0)
 
 	s := NewStore()
-	_ = s.Add(NewTask("Task"))
+	s.Tasks = []Task{testTask(1, "Task")}
 
 	tt := map[string]struct {
 		id      int64
@@ -107,11 +117,9 @@ func TestStoreUpdateStatus(t *testing.T) {
 
 func TestStoreGetByID(t *testing.T) {
 	t.Chdir(t.TempDir())
-	taskID.Store(0)
 
 	s := NewStore()
-	_ = s.Add(NewTask("One"))
-	_ = s.Add(NewTask("Two"))
+	s.Tasks = []Task{testTask(1, "One"), testTask(2, "Two")}
 
 	tt := map[string]struct {
 		id      int64
@@ -138,11 +146,9 @@ func TestStoreGetByID(t *testing.T) {
 
 func TestStoreDelete(t *testing.T) {
 	t.Chdir(t.TempDir())
-	taskID.Store(0)
 
 	s := NewStore()
-	_ = s.Add(NewTask("One"))
-	_ = s.Add(NewTask("Two"))
+	s.Tasks = []Task{testTask(1, "One"), testTask(2, "Two")}
 
 	tt := []struct {
 		name       string
@@ -173,10 +179,9 @@ func TestStoreDelete(t *testing.T) {
 
 func TestStoreSaveAndGetAll(t *testing.T) {
 	t.Chdir(t.TempDir())
-	taskID.Store(0)
 
 	s := NewStore()
-	_ = s.Add(NewTask("Saved"))
+	_ = s.Add(testTask(1, "Saved"))
 
 	loaded, err := s.GetAll()
 	if err != nil {
@@ -192,11 +197,10 @@ func TestStoreSaveAndGetAll(t *testing.T) {
 
 func TestStoreLoadTasks(t *testing.T) {
 	t.Chdir(t.TempDir())
-	taskID.Store(0)
 
 	// Create a store, add a task, and save it.
 	s := NewStore()
-	_ = s.Add(NewTask("Persisted"))
+	_ = s.Add(testTask(1, "Persisted"))
 
 	// Start fresh and load from disk.
 	s2 := NewStore()
@@ -225,6 +229,9 @@ func TestStoreLoadTasksNoFile(t *testing.T) {
 }
 
 func TestUpdateCounter(t *testing.T) {
+	original := taskID.Load()
+	defer taskID.Store(original)
+
 	tt := map[string]struct {
 		tasks []Task
 		want  int64

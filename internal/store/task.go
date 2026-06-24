@@ -70,6 +70,11 @@ func (t Task) String() string {
 // taskID holds the counter used to generate unique task IDs.
 var taskID atomic.Int64
 
+// ResetTaskID resets the task ID counter to zero. It is intended for tests.
+func ResetTaskID() {
+	taskID.Store(0)
+}
+
 // NewTask creates a new Task with the given description and a unique ID.
 func NewTask(desc string) Task {
 
