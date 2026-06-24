@@ -12,7 +12,7 @@ import (
 func commandHelp(st *store.Store, args ...string) error {
 	commands := getCommands()
 
-	if len(args) == 0 {
+	if len(args) != 1 {
 		names := sortedCommandNames(commands)
 		maxUsageLen := maxUsageLength(commands)
 		lines := make([]string, 0, len(commands))

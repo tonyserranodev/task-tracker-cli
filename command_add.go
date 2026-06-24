@@ -10,7 +10,7 @@ import (
 
 // commandAdd creates a new task from args and stores it.
 func commandAdd(st *store.Store, args ...string) error {
-	if len(args) < 1 {
+	if len(args) != 1 {
 		return errors.New("must provide a description of a task to add")
 	}
 

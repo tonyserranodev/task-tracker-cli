@@ -12,7 +12,7 @@ import (
 // commandDelete removes the task with the given ID from the store.
 func commandDelete(st *store.Store, args ...string) error {
 
-	if len(args) < 1 {
+	if len(args) != 1 {
 		return errors.New("must provide the id of a task to delete")
 	}
 

@@ -11,7 +11,7 @@ import (
 // commandList prints all tasks in the store.
 func commandList(st *store.Store, _ ...string) error {
 	if len(st.Tasks) == 0 {
-		fmt.Println("no tasks yet")
+		fmt.Println(style.Style{Foreground: style.Yellow}.Apply("no tasks yet"))
 		return nil
 	}
 
