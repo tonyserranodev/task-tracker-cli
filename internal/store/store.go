@@ -55,7 +55,7 @@ func (s *Store) UpdateDescription(id int64, newDescription string) error {
 func (s *Store) UpdateStatus(id int64, newStatus Status) error {
 	for i, t := range s.Tasks {
 		if t.ID == id {
-			s.Tasks[i].Status = statusName[newStatus]
+			s.Tasks[i].Status = statusNames[newStatus]
 			s.Tasks[i].UpdatedAt = time.Now()
 
 			if err := s.SaveTasks(); err != nil {
@@ -80,7 +80,27 @@ func (s *Store) GetByID(id int64) (Task, error) {
 	return Task{}, fmt.Errorf("no task found with id, %v", id)
 }
 
+func (s *Store) GetTasksByStatus(statusString string) ([]Task, error) {
+	filtered := []Task{}
+
+	for _, task := range s.Tasks {
+		if task.Status == statusString {
+
+			filtered = append(filtered, task)
+		}
+	}
+
+	if len(filtered) == 0 {
+
+		return nil, fmt.Errorf("no task found with status: %s", statusString)
+	}
+
+	return filtered, nil
+}
+
 // GetAll reads all tasks from disk and updates the global ID counter.
+// TODO: factor out the file loading logic into a Load function
+// GetAll should just return the tasks from memory
 func (s *Store) GetAll() ([]Task, error) {
 	file, err := os.Open(FILEPATH)
 	if err != nil {

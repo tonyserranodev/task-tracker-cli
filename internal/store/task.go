@@ -33,16 +33,16 @@ func NewStatus(status string) Status {
 	}
 }
 
-// statusName maps each Status to its string representation.
-var statusName = map[Status]string{
+// statusNames maps each Status to its string representation.
+var statusNames = map[Status]string{
 	Todo:       "todo",
-	InProgress: "in progress",
+	InProgress: "in-progress",
 	Done:       "done",
 }
 
 // String returns the string representation of a task status.
 func (d Status) String() string {
-	return statusName[d]
+	return statusNames[d]
 }
 
 // Task represents a single task in the task tracker.
@@ -68,7 +68,7 @@ func NewTask(desc string) Task {
 	newTask := Task{
 		ID:          taskID.Add(1),
 		Description: desc,
-		Status:      statusName[Todo],
+		Status:      statusNames[Todo],
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}

@@ -12,7 +12,7 @@ func testTask(id int64, description string) Task {
 	return Task{
 		ID:          id,
 		Description: description,
-		Status:      statusName[Todo],
+		Status:      statusNames[Todo],
 		CreatedAt:   fixed,
 		UpdatedAt:   fixed,
 	}
@@ -106,7 +106,7 @@ func TestStoreUpdateStatus(t *testing.T) {
 
 			if !tc.wantErr {
 				got, _ := s.GetByID(tc.id)
-				want := statusName[tc.status]
+				want := statusNames[tc.status]
 				if got.Status != want {
 					t.Errorf("Status = %q, want %q", got.Status, want)
 				}

@@ -35,13 +35,25 @@ This produces an executable named `task-tracker-cli` in the current directory.
 
 Creates a new task with status `todo` and prints the assigned task ID.
 
-### List all tasks: `list`
+### List tasks: `list [status]`
 
 ```bash
 ./task-tracker-cli list
 ```
 
 Displays all tasks in a bordered table with ID, description, status, creation time, and last update time.
+
+Filter by status:
+
+```bash
+./task-tracker-cli list in-progress
+```
+
+Valid statuses are:
+
+- `todo`
+- `in-progress`
+- `done`
 
 ### Update a task description: `update <id> <description>`
 

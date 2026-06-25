@@ -32,7 +32,7 @@ func TestStatusString(t *testing.T) {
 		want   string
 	}{
 		"todo":        {Todo, "todo"},
-		"in-progress": {InProgress, "in progress"},
+		"in-progress": {InProgress, "in-progress"},
 		"done":        {Done, "done"},
 	}
 

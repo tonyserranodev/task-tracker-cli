@@ -9,7 +9,7 @@ import (
 )
 
 // commandList prints all tasks in the store.
-func commandList(st *store.Store, _ ...string) error {
+func commandList(st *store.Store, args ...string) error {
 	if len(st.Tasks) == 0 {
 		msg, err := style.Render("no tasks yet", "yellow")
 		if err != nil {
@@ -21,6 +21,25 @@ func commandList(st *store.Store, _ ...string) error {
 		return nil
 	}
 
+	// if status provided, print tasks filtered by given status
+	if len(args) == 1 {
+		status := args[0]
+		filteredTasks, err := st.GetTasksByStatus(status)
+		if err != nil {
+			return err
+		}
+
+		taskTable, err := formatTaskTable(filteredTasks)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(taskTable)
+
+		return nil
+	}
+
+	// print all tasks if no arguments given
 	taskTable, err := formatTaskTable(st.Tasks)
 	if err != nil {
 		return err
