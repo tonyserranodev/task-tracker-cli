@@ -10,8 +10,9 @@ import (
 
 // main loads saved tasks, parses the CLI command, and executes it.
 func main() {
-	var st = store.NewStore()
+	st := store.NewStore()
 
+	// LoadTasks into the store
 	err := st.LoadTasks()
 	if err != nil {
 		fmt.Println(err)
@@ -21,6 +22,7 @@ func main() {
 		fmt.Println(`Usage: task-tracker-cli add "Buy Eggs"`)
 		os.Exit(0)
 	}
+
 	userArgs := os.Args[1:]
 	commandName := userArgs[0]
 	cmd, ok := getCommands()[commandName]
@@ -28,6 +30,7 @@ func main() {
 		fmt.Println("unknown command")
 		os.Exit(1)
 	}
+
 	cmdArgs := userArgs[1:]
 
 	err = cmd.callback(st, cmdArgs...)

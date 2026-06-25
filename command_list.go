@@ -48,6 +48,7 @@ func formatTaskTable(tasks []store.Task) (string, error) {
 		updatedW = max(updatedW, len(task.UpdatedAt.Format(time.RFC822)))
 	}
 
+	// Helper function to format columns
 	row := func(cols ...string) string {
 		return style.PadRight(cols[0], idW) + " " +
 			style.PadRight(cols[1], descW) + " " +
