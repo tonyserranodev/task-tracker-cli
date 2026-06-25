@@ -3,6 +3,8 @@
 
 A small command-line tool for managing a personal task list. Tasks are stored locally in a `tasks.json` file.
 
+[link to roadmap.sh project outline](https://roadmap.sh/projects/task-tracker)
+
 ## Build
 
 Requires Go 1.25 or later.
